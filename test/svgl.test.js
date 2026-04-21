@@ -31,11 +31,13 @@ test('slugify normalizes names', () => {
 });
 
 test('parseArgs collects flags and positional args', () => {
-  const { positional, flags } = parseArgs(['show', 'GitHub', '--theme', 'dark', '--wordmark', '--width', '48', '--out', './assets', '--json']);
+  const { positional, flags } = parseArgs(['show', 'GitHub', '--theme', 'dark', '--wordmark', '--width', '48', '--format', 'png', '--size', '1024', '--out', './assets', '--json']);
   assert.deepEqual(positional, ['show', 'GitHub']);
   assert.equal(flags.theme, 'dark');
   assert.equal(flags.wordmark, true);
   assert.equal(flags.width, '48');
+  assert.equal(flags.format, 'png');
+  assert.equal(flags.size, 1024);
   assert.equal(flags.out, './assets');
   assert.equal(flags.json, true);
 });
@@ -78,6 +80,8 @@ test('getDisplayStrategy detects iTerm and Kitty', () => {
 
 test('resolveOutputPath derives filename from icon metadata', () => {
   assert.equal(resolveOutputPath(github, { out: './assets', theme: 'dark' }), 'assets/github-dark.svg');
+  assert.equal(resolveOutputPath(github, { out: './assets', theme: 'dark', format: 'png' }), 'assets/github-dark.png');
   assert.equal(resolveOutputPath(github, { out: './assets/custom.svg', theme: 'dark' }), 'assets/custom.svg');
+  assert.equal(resolveOutputPath(github, { out: './assets/custom.jpg', theme: 'dark', format: 'jpg' }), 'assets/custom.jpg');
   assert.equal(resolveOutputPath(github, { out: './assets', wordmark: true, theme: 'light' }), 'assets/github-wordmark-light.svg');
 });

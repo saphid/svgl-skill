@@ -1,6 +1,6 @@
 ---
 name: svgl
-description: Use for logos, logo marks, brand marks, app icons, product icons, wordmarks, badges, and other brand SVG assets from svgl.app.
+description: Use for logos, logo marks, brand marks, app icons, product icons, wordmarks, badges, and other brand assets from svgl.app, including SVG and converted PNG/JPG/GIF outputs.
 ---
 
 # SVGL
@@ -12,6 +12,7 @@ The helper CLI in this skill wraps the public SVGL API and handles the practical
 - inspecting theme-aware icon variants
 - showing an icon inline in supported terminals
 - downloading icon or wordmark SVGs
+- converting SVGs to PNG, JPG/JPEG, or GIF when a raster image is needed
 - saving files with predictable names
 - sending a browser-like `User-Agent` so API requests do not get blocked like some default runtimes do
 
@@ -25,14 +26,17 @@ Reach for this skill when the user asks for any of these or close synonyms:
 - wordmark
 - badge
 - SVG for a company, product, framework, service, or tool
+- PNG / JPG / JPEG / GIF version of a logo or icon
+- “show me” / display / preview requests for a logo or icon
 
 ## First move
 
 When the user asks for a logo/icon/wordmark/brand asset:
 1. Search first.
-2. Inspect if there are multiple plausible matches or theme variants.
-3. Download the exact asset you need.
-4. Mention the saved file path in your response.
+2. If they say “show me”, “display”, or “preview”, use `show` first when possible.
+3. Inspect if there are multiple plausible matches or theme variants.
+4. Download or convert the exact asset you need.
+5. Mention the saved file path in your response.
 
 ## Setup
 
@@ -85,6 +89,7 @@ If inline display is unavailable, use `download` instead.
 {baseDir}/svgl.js download github --theme dark --out ./assets
 {baseDir}/svgl.js download vercel --theme light --filename vercel-logo.svg
 {baseDir}/svgl.js download github --exact --json
+{baseDir}/svgl.js download apple --format png --size 1024 --out ./assets
 ```
 
 ### Download a wordmark
@@ -92,6 +97,19 @@ If inline display is unavailable, use `download` instead.
 ```bash
 {baseDir}/svgl.js download github --wordmark --theme light --out ./assets/brands
 ```
+
+### Convert to PNG / JPG / GIF
+
+```bash
+{baseDir}/svgl.js convert apple --format png --size 1024 --out ./assets
+{baseDir}/svgl.js convert github --format jpg --size 512 --out ./assets
+{baseDir}/svgl.js convert github --wordmark --format gif --size 768 --out ./assets/brands
+```
+
+Notes:
+- SVGL itself gives you SVG assets.
+- This skill converts SVGs locally to `png`, `jpg`/`jpeg`, or `gif`.
+- On macOS this uses `qlmanage` + `sips`.
 
 ### Categories
 
@@ -105,8 +123,10 @@ If inline display is unavailable, use `download` instead.
 - `--exact`: require exact title match instead of taking the first search result
 - `--theme auto|light|dark`: choose a themed asset when available
 - `--wordmark`: use the wordmark instead of the icon
-- `--out PATH`: output directory or full `.svg` file path
-- `--filename NAME.svg`: force the output filename
+- `--format svg|png|jpg|jpeg|gif`: output format
+- `--size N`: raster output size for png/jpg/jpeg/gif conversion
+- `--out PATH`: output directory or full asset file path
+- `--filename NAME.ext`: force the output filename
 - `--no-optimize`: ask the API for the non-optimized SVG payload when supported
 - `--json`: machine-readable output
 
@@ -116,16 +136,27 @@ Use this default flow:
 
 1. Search with the user’s term.
 2. If there are multiple matches, show the best candidates briefly.
-3. If the user wants to see it immediately, run `show`.
+3. If the user says “show me”, “display”, or “preview”, run `show`.
 4. If exact branding matters, run `inspect` or `search --exact`.
-5. Download to the project’s asset folder when they need a file.
-6. Report the final saved path when you save one.
+5. Use `download` for SVG output.
+6. Use `convert` or `download --format ...` for PNG/JPG/GIF output.
+7. Report the final saved path when you save one.
 
 ## Examples
+
+- “Show me the Apple logo”
+  ```bash
+  {baseDir}/svgl.js show apple
+  ```
 
 - “Grab the GitHub icon as a dark SVG”
   ```bash
   {baseDir}/svgl.js download github --theme dark --out ./assets
+  ```
+
+- “Make me a PNG of the Apple logo”
+  ```bash
+  {baseDir}/svgl.js convert apple --format png --size 1024 --out ./assets
   ```
 
 - “Find whether Linear has a wordmark”

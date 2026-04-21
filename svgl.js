@@ -8,6 +8,7 @@ import { spawn } from 'node:child_process';
 
 const API_BASE = 'https://api.svgl.app';
 const USER_AGENT = 'svgl-skill/0.1 (+https://github.com/alxDisplayr/svgl-skill)';
+const RASTER_FORMATS = new Set(['png', 'jpg', 'jpeg', 'gif']);
 
 export function slugify(value) {
   return String(value)
@@ -30,6 +31,8 @@ export function parseArgs(argv) {
     out: '.',
     filename: null,
     width: null,
+    format: 'svg',
+    size: 512,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -64,6 +67,19 @@ export function parseArgs(argv) {
     if (arg === '--width') {
       if (!next) throw new Error('--width requires a value');
       flags.width = next;
+      i += 1;
+      continue;
+    }
+    if (arg === '--format') {
+      if (!next) throw new Error('--format requires a value');
+      flags.format = String(next).toLowerCase();
+      i += 1;
+      continue;
+    }
+    if (arg === '--size') {
+      if (!next) throw new Error('--size requires a value');
+      flags.size = Number.parseInt(next, 10);
+      if (!Number.isFinite(flags.size) || flags.size <= 0) throw new Error('--size must be a positive integer');
       i += 1;
       continue;
     }
@@ -151,8 +167,9 @@ export function chooseAssetUrl(icon, { theme = 'auto', wordmark = false } = {}) 
   return asset.light || asset.dark || Object.values(asset)[0];
 }
 
-export function resolveOutputPath(icon, { out = '.', filename = null, theme = 'auto', wordmark = false } = {}) {
-  const ext = '.svg';
+export function resolveOutputPath(icon, { out = '.', filename = null, theme = 'auto', wordmark = false, format = 'svg' } = {}) {
+  const normalizedFormat = format === 'jpg' ? 'jpg' : format;
+  const ext = `.${normalizedFormat}`;
   const explicitFile = filename || (out.toLowerCase().endsWith(ext) ? path.basename(out) : null);
   const baseDir = out.toLowerCase().endsWith(ext) ? path.dirname(out) : out;
   const suffix = [wordmark ? 'wordmark' : null, theme !== 'auto' ? theme : null].filter(Boolean).join('-');
@@ -308,13 +325,14 @@ function printCategories(categories) {
 }
 
 function usage() {
-  console.log(`svgl.js - search, show, and download icons from svgl.app
+  console.log(`svgl.js - search, show, download, and convert icons from svgl.app
 
 Usage:
   svgl.js search <query> [--limit N] [--exact] [--json]
   svgl.js inspect <query> [--exact] [--json]
   svgl.js show <query> [--theme auto|light|dark] [--wordmark] [--exact] [--width N]
-  svgl.js download <query> [--theme auto|light|dark] [--wordmark] [--exact] [--out PATH] [--filename NAME.svg] [--no-optimize]
+  svgl.js download <query> [--theme auto|light|dark] [--wordmark] [--exact] [--format svg|png|jpg|jpeg|gif] [--size N] [--out PATH] [--filename NAME.ext] [--no-optimize]
+  svgl.js convert <query> [--theme auto|light|dark] [--wordmark] [--exact] --format png|jpg|jpeg|gif [--size N] [--out PATH] [--filename NAME.ext]
   svgl.js categories [--json]
 
 Examples:
@@ -322,6 +340,7 @@ Examples:
   svgl.js inspect next.js --exact --json
   svgl.js show apple --theme dark
   svgl.js download github --theme dark --out ./assets
+  svgl.js convert apple --format png --size 1024 --out ./assets
   svgl.js download vercel --wordmark --theme light --filename vercel-wordmark.svg
   svgl.js categories
 `);
@@ -396,16 +415,56 @@ async function handleShow(query, flags) {
   console.log(`Temp file: ${tempPath}`);
 }
 
-async function handleDownload(query, flags) {
-  const match = await resolveMatch(query, flags);
-  if (!match) return;
+async function rasterizeSvg(svgPath, outputPath, size) {
+  if (!(await commandExists('qlmanage'))) {
+    throw new Error('qlmanage is required for SVG rasterization on macOS but was not found');
+  }
+  if (!(await commandExists('sips'))) {
+    throw new Error('sips is required for image conversion on macOS but was not found');
+  }
 
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'svgl-raster-'));
+  const pngPreview = path.join(tempDir, `${path.basename(svgPath)}.png`);
+
+  await new Promise((resolve, reject) => {
+    const child = spawn('qlmanage', ['-t', '-s', String(size), '-o', tempDir, svgPath], { stdio: 'ignore' });
+    child.on('exit', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`qlmanage exited with code ${code}`));
+    });
+    child.on('error', reject);
+  });
+
+  if (outputPath.toLowerCase().endsWith('.png')) {
+    await fs.copyFile(pngPreview, outputPath);
+    return;
+  }
+
+  await new Promise((resolve, reject) => {
+    const child = spawn('sips', ['-s', 'format', path.extname(outputPath).slice(1), pngPreview, '--out', outputPath], { stdio: 'ignore' });
+    child.on('exit', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`sips exited with code ${code}`));
+    });
+    child.on('error', reject);
+  });
+}
+
+async function saveAsset(match, flags) {
   const { svg, assetUrl, downloadUrl } = await fetchSvgForMatch(match, flags);
   const outputPath = resolveOutputPath(match, flags);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await fs.writeFile(outputPath, svg, 'utf8');
 
-  const result = {
+  if (flags.format === 'svg') {
+    await fs.writeFile(outputPath, svg, 'utf8');
+  } else {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'svgl-source-'));
+    const tempSvgPath = path.join(tempDir, `${slugify(match.title)}.svg`);
+    await fs.writeFile(tempSvgPath, svg, 'utf8');
+    await rasterizeSvg(tempSvgPath, outputPath, flags.size);
+  }
+
+  return {
     title: match.title,
     savedTo: outputPath,
     assetUrl,
@@ -414,15 +473,43 @@ async function handleDownload(query, flags) {
     sourceUrl: match.url,
     usedWordmark: flags.wordmark,
     theme: flags.theme,
+    format: flags.format,
+    size: flags.size,
   };
+}
+
+async function handleDownload(query, flags) {
+  const match = await resolveMatch(query, flags);
+  if (!match) return;
+
+  const result = await saveAsset(match, flags);
 
   if (flags.json) {
     console.log(JSON.stringify(result, null, 2));
     return;
   }
 
-  console.log(`Saved ${match.title} to ${outputPath}`);
-  console.log(`Source: ${assetUrl}`);
+  console.log(`Saved ${match.title} to ${result.savedTo}`);
+  console.log(`Source: ${result.assetUrl}`);
+}
+
+async function handleConvert(query, flags) {
+  if (!RASTER_FORMATS.has(flags.format)) {
+    throw new Error(`convert requires a raster format: ${Array.from(RASTER_FORMATS).join(', ')}`);
+  }
+
+  const match = await resolveMatch(query, flags);
+  if (!match) return;
+
+  const result = await saveAsset(match, flags);
+
+  if (flags.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log(`Converted ${match.title} to ${result.savedTo}`);
+  console.log(`Source: ${result.assetUrl}`);
 }
 
 async function main() {
@@ -450,12 +537,15 @@ async function main() {
       throw new Error(`${command} requires a query`);
     }
 
-    if (!['search', 'inspect', 'show', 'download'].includes(command)) {
+    if (!['search', 'inspect', 'show', 'download', 'convert'].includes(command)) {
       throw new Error(`Unknown command: ${command}`);
     }
 
     if (!['auto', 'light', 'dark'].includes(flags.theme)) {
       throw new Error(`Unsupported theme: ${flags.theme}`);
+    }
+    if (!['svg', ...RASTER_FORMATS].includes(flags.format)) {
+      throw new Error(`Unsupported format: ${flags.format}`);
     }
 
     if (command === 'search') {
@@ -468,6 +558,10 @@ async function main() {
     }
     if (command === 'show') {
       await handleShow(query, flags);
+      return;
+    }
+    if (command === 'convert') {
+      await handleConvert(query, flags);
       return;
     }
     await handleDownload(query, flags);
