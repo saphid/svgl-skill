@@ -1,0 +1,28 @@
+{
+  "name": "svgl-skill",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Agent skill + helper CLI for searching and downloading icons from svgl.app",
+  "bin": {
+    "svgl-skill": "./svgl.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "smoke": "node ./svgl.js search github --limit 2 && rm -rf ./.tmp-smoke && mkdir -p ./.tmp-smoke && node ./svgl.js download github --theme dark --exact --out ./.tmp-smoke && test -s ./.tmp-smoke/github-dark.svg"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "skill",
+    "svgl",
+    "svg",
+    "icons",
+    "logos",
+    "pi",
+    "claude-code",
+    "codex"
+  ],
+  "license": "MIT"
+}
