@@ -16,19 +16,6 @@ The helper CLI in this skill wraps the public SVGL API and handles the practical
 - saving files with predictable names
 - sending a browser-like `User-Agent` so API requests do not get blocked like some default runtimes do
 
-## Trigger phrases
-
-Reach for this skill when the user asks for any of these or close synonyms:
-- logo / logos
-- logomark / logo mark
-- brand mark / brand asset / branding asset
-- icon / app icon / product icon
-- wordmark
-- badge
-- SVG for a company, product, framework, service, or tool
-- PNG / JPG / JPEG / GIF version of a logo or icon
-- “show me” / display / preview requests for a logo or icon
-
 ## First move
 
 When the user asks for a logo/icon/wordmark/brand asset:
