@@ -1,6 +1,6 @@
 ---
 name: svgl
-description: Use for logos, logo marks, brand marks, app icons, product icons, wordmarks, badges, and other brand assets from svgl.app, including SVG and converted PNG/JPG/GIF outputs.
+description: Trigger this for requests to show, preview, display, find, download, or convert logos, logomarks, brand marks, wordmarks, badges, app icons, product icons, company SVGs, and PNG/JPG/GIF versions of those assets from svgl.app.
 ---
 
 # SVGL
