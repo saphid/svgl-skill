@@ -1,14 +1,17 @@
 # svgl-skill
 
-A tiny agent skill for searching [svgl.app](https://svgl.app) and downloading SVG icons or wordmarks on demand.
+A tiny agent skill for searching [svgl.app](https://svgl.app), showing logos inline in the terminal, and downloading SVG icons or wordmarks on demand.
 
 It is designed for pi, Claude Code, Codex CLI, Amp, and similar agent setups.
+
+Use it when you ask for logos, logomarks, brand marks, app icons, product icons, badges, or wordmarks.
 
 ## Why this exists
 
 SVGL already has a great public API, but agents often need a repeatable local helper that can:
 - search quickly
 - inspect the raw match payload
+- show an icon inline in supported terminals
 - pick light/dark variants
 - download icon vs wordmark assets
 - save them into the working tree with sane names
@@ -55,6 +58,7 @@ git clone https://github.com/alxDisplayr/svgl-skill ~/.codex/skills/svgl
 ```bash
 ./svgl.js search github
 ./svgl.js inspect github
+./svgl.js show apple --theme dark
 ./svgl.js download github --theme dark --out ./assets
 ./svgl.js download github --wordmark --theme light --out ./assets/brands
 ./svgl.js categories

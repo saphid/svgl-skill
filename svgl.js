@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { spawn } from 'node:child_process';
 
 const API_BASE = 'https://api.svgl.app';
 const USER_AGENT = 'svgl-skill/0.1 (+https://github.com/alxDisplayr/svgl-skill)';
@@ -27,6 +29,7 @@ export function parseArgs(argv) {
     noOptimize: false,
     out: '.',
     filename: null,
+    width: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -55,6 +58,12 @@ export function parseArgs(argv) {
     if (arg === '--filename') {
       if (!next) throw new Error('--filename requires a value');
       flags.filename = next;
+      i += 1;
+      continue;
+    }
+    if (arg === '--width') {
+      if (!next) throw new Error('--width requires a value');
+      flags.width = next;
       i += 1;
       continue;
     }
@@ -108,6 +117,14 @@ async function fetchJson(url) {
 async function fetchText(url) {
   const response = await fetchWithHeaders(url);
   return response.text();
+}
+
+async function commandExists(command) {
+  return new Promise((resolve) => {
+    const child = spawn('sh', ['-lc', `command -v ${command} >/dev/null 2>&1`], { stdio: 'ignore' });
+    child.on('exit', (code) => resolve(code === 0));
+    child.on('error', () => resolve(false));
+  });
 }
 
 function endpointForSearch(query, limit) {
@@ -217,6 +234,49 @@ async function listCategories() {
   return fetchJson(`${API_BASE}/categories`);
 }
 
+export function getDisplayStrategy(env = process.env) {
+  if (env.ITERM_SESSION_ID || env.TERM_PROGRAM === 'iTerm.app') return { command: 'imgcat', args: [] };
+  if (env.KITTY_WINDOW_ID || env.TERM === 'xterm-kitty') return { command: 'kitten', args: ['icat'] };
+  return null;
+}
+
+async function runDisplayCommand(strategy, filePath, width = null) {
+  const args = [...strategy.args];
+  if (strategy.command === 'imgcat' && width) {
+    args.push('-W', String(width));
+  }
+  if (strategy.command === 'kitten' && width) {
+    args.push('--place', `${width}x0@0x0`);
+  }
+  args.push(filePath);
+
+  await new Promise((resolve, reject) => {
+    const child = spawn(strategy.command, args, { stdio: 'inherit' });
+    child.on('exit', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${strategy.command} exited with code ${code}`));
+    });
+    child.on('error', reject);
+  });
+}
+
+async function showSvg(svg, flags) {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'svgl-show-'));
+  const filePath = path.join(tmpDir, 'preview.svg');
+  await fs.writeFile(filePath, svg, 'utf8');
+
+  const strategy = getDisplayStrategy();
+  if (!strategy) {
+    throw new Error('No supported inline image viewer found. Supported terminals: iTerm2 (imgcat) and Kitty (kitten icat).');
+  }
+  if (!(await commandExists(strategy.command))) {
+    throw new Error(`Display command not found in PATH: ${strategy.command}`);
+  }
+
+  await runDisplayCommand(strategy, filePath, flags.width);
+  return filePath;
+}
+
 function formatKinds(icon) {
   return [
     icon.route ? 'icon' : null,
@@ -248,17 +308,19 @@ function printCategories(categories) {
 }
 
 function usage() {
-  console.log(`svgl.js - search and download icons from svgl.app
+  console.log(`svgl.js - search, show, and download icons from svgl.app
 
 Usage:
   svgl.js search <query> [--limit N] [--exact] [--json]
   svgl.js inspect <query> [--exact] [--json]
+  svgl.js show <query> [--theme auto|light|dark] [--wordmark] [--exact] [--width N]
   svgl.js download <query> [--theme auto|light|dark] [--wordmark] [--exact] [--out PATH] [--filename NAME.svg] [--no-optimize]
   svgl.js categories [--json]
 
 Examples:
   svgl.js search github
   svgl.js inspect next.js --exact --json
+  svgl.js show apple --theme dark
   svgl.js download github --theme dark --out ./assets
   svgl.js download vercel --wordmark --theme light --filename vercel-wordmark.svg
   svgl.js categories
@@ -301,23 +363,44 @@ async function handleInspect(query, flags) {
   console.log(JSON.stringify(match, null, 2));
 }
 
-async function handleDownload(query, flags) {
+async function resolveMatch(query, flags) {
   const results = await searchIcons(query, Math.max(flags.limit, 10));
   const match = pickBestMatch(results, query, flags.exact);
   if (!match) {
     console.error(`No ${flags.exact ? 'exact ' : ''}match found for \"${query}\".`);
     process.exitCode = 1;
-    return;
+    return null;
   }
+  return match;
+}
 
+async function fetchSvgForMatch(match, flags) {
   const assetUrl = chooseAssetUrl(match, { theme: flags.theme, wordmark: flags.wordmark });
   let downloadUrl = assetUrl;
   if (flags.noOptimize) {
     const filename = assetUrl.split('/').pop();
     downloadUrl = `${API_BASE}/svg/${filename}?no-optimize`;
   }
-
   const svg = await fetchText(downloadUrl);
+  return { svg, assetUrl, downloadUrl };
+}
+
+async function handleShow(query, flags) {
+  const match = await resolveMatch(query, flags);
+  if (!match) return;
+
+  const { svg, assetUrl } = await fetchSvgForMatch(match, flags);
+  const tempPath = await showSvg(svg, flags);
+  console.log(`Displayed ${match.title}`);
+  console.log(`Source: ${assetUrl}`);
+  console.log(`Temp file: ${tempPath}`);
+}
+
+async function handleDownload(query, flags) {
+  const match = await resolveMatch(query, flags);
+  if (!match) return;
+
+  const { svg, assetUrl, downloadUrl } = await fetchSvgForMatch(match, flags);
   const outputPath = resolveOutputPath(match, flags);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, svg, 'utf8');
@@ -367,7 +450,7 @@ async function main() {
       throw new Error(`${command} requires a query`);
     }
 
-    if (!['search', 'inspect', 'download'].includes(command)) {
+    if (!['search', 'inspect', 'show', 'download'].includes(command)) {
       throw new Error(`Unknown command: ${command}`);
     }
 
@@ -381,6 +464,10 @@ async function main() {
     }
     if (command === 'inspect') {
       await handleInspect(query, flags);
+      return;
+    }
+    if (command === 'show') {
+      await handleShow(query, flags);
       return;
     }
     await handleDownload(query, flags);

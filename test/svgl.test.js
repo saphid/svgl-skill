@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   chooseAssetUrl,
+  getDisplayStrategy,
   parseArgs,
   pickBestMatch,
   rankAndFilterIcons,
@@ -30,10 +31,11 @@ test('slugify normalizes names', () => {
 });
 
 test('parseArgs collects flags and positional args', () => {
-  const { positional, flags } = parseArgs(['download', 'GitHub', '--theme', 'dark', '--wordmark', '--out', './assets', '--json']);
-  assert.deepEqual(positional, ['download', 'GitHub']);
+  const { positional, flags } = parseArgs(['show', 'GitHub', '--theme', 'dark', '--wordmark', '--width', '48', '--out', './assets', '--json']);
+  assert.deepEqual(positional, ['show', 'GitHub']);
   assert.equal(flags.theme, 'dark');
   assert.equal(flags.wordmark, true);
+  assert.equal(flags.width, '48');
   assert.equal(flags.out, './assets');
   assert.equal(flags.json, true);
 });
@@ -64,6 +66,14 @@ test('rankAndFilterIcons promotes the expected brand', () => {
     { title: 'GitHub', url: 'https://github.com/' },
   ], 'github', 3);
   assert.deepEqual(results.map((item) => item.title), ['GitHub', 'GitHub Copilot']);
+});
+
+test('getDisplayStrategy detects iTerm and Kitty', () => {
+  assert.deepEqual(getDisplayStrategy({ ITERM_SESSION_ID: 'x' }), { command: 'imgcat', args: [] });
+  assert.deepEqual(getDisplayStrategy({ TERM_PROGRAM: 'iTerm.app' }), { command: 'imgcat', args: [] });
+  assert.deepEqual(getDisplayStrategy({ KITTY_WINDOW_ID: 'x' }), { command: 'kitten', args: ['icat'] });
+  assert.deepEqual(getDisplayStrategy({ TERM: 'xterm-kitty' }), { command: 'kitten', args: ['icat'] });
+  assert.equal(getDisplayStrategy({}), null);
 });
 
 test('resolveOutputPath derives filename from icon metadata', () => {
