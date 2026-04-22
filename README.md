@@ -22,7 +22,6 @@ Everything in this repo follows that shape.
 ## Files
 
 - `svgl-simple.ts` — clean TypeScript version with `--light`, `--dark`, `--wordmark`, and `--out`
-- `svgl-simple.sh` — minimal bash version for exact-match SVG download
 - `SKILL.md` — skill instructions for agents
 
 ## TypeScript usage
@@ -41,19 +40,6 @@ node svgl-simple.ts github --wordmark --light --out ./github-wordmark.svg
 - `--wordmark` — use the wordmark instead of the icon
 - `--out <path>` — output file path
 
-## Bash usage
-
-```bash
-./svgl-simple.sh apple
-./svgl-simple.sh apple ./apple.svg
-```
-
-This bash version does the minimum:
-- fetch catalog
-- exact-match title
-- choose one route
-- save one SVG
-
 ## Skill usage
 
 The skill is for requests like:
@@ -64,12 +50,7 @@ The skill is for requests like:
 
 ## Requirements
 
-### TypeScript version
 - Node with `fetch` support and direct `.ts` execution
-
-### Bash version
-- `curl`
-- `jq`
 
 ## Notes
 

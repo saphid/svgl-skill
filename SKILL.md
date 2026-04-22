@@ -16,9 +16,9 @@ Given a brand name:
 
 If the task needs more than that, ask whether a more complex tool is actually necessary.
 
-## Primary helper
+## Helper
 
-Use the TypeScript helper first:
+Use the TypeScript helper:
 
 ```bash
 node {baseDir}/svgl-simple.ts apple
@@ -32,15 +32,6 @@ Flags:
 - `--dark`
 - `--wordmark`
 - `--out <path>`
-
-## Bash fallback
-
-Use this when you want the smallest possible exact-match SVG download flow:
-
-```bash
-{baseDir}/svgl-simple.sh apple
-{baseDir}/svgl-simple.sh apple ./apple.svg
-```
 
 ## Workflow
 
