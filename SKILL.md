@@ -10,7 +10,7 @@ Use this skill when the user wants a logo or brand SVG from svgl.app.
 ## Invariant
 
 Given a brand name:
-1. find the exact SVGL item
+1. find the exact SVGL item, case-insensitively
 2. choose one route
 3. write one file
 
@@ -46,3 +46,4 @@ Flags:
 - This repo stays intentionally small.
 - SVGL provides SVG assets; this skill is for getting the right SVG quickly.
 - If there is no exact match, say so clearly instead of guessing.
+- Unknown flags should be treated as caller mistakes, not silently ignored.

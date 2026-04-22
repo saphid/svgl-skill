@@ -1,6 +1,6 @@
 # svgl-skill
 
-A tiny skill for downloading brand SVGs from [svgl.app](https://svgl.app) by name.
+A tiny skill for downloading brand SVGs from [svgl.app](https://svgl.app) by exact name.
 
 <p align="center">
   <img src="docs/assets/apple.png" alt="Apple logo" width="120" />
@@ -13,7 +13,7 @@ A tiny skill for downloading brand SVGs from [svgl.app](https://svgl.app) by nam
 ## Invariant
 
 Given a brand name:
-1. find the exact SVGL item
+1. find the exact SVGL item, case-insensitively
 2. choose one route
 3. write one file
 
@@ -40,6 +40,8 @@ node svgl-simple.ts github --wordmark --light --out ./github-wordmark.svg
 - `--wordmark` — use the wordmark instead of the icon
 - `--out <path>` — output file path
 
+The helper is intentionally exact-match only. If SVGL does not have an exact title match, it fails clearly instead of guessing.
+
 ## Skill usage
 
 The skill is for requests like:
@@ -51,6 +53,12 @@ The skill is for requests like:
 ## Requirements
 
 - Node with `fetch` support and direct `.ts` execution
+
+Validated flow:
+
+```bash
+node svgl-simple.ts apple --dark --out ./apple-dark.svg
+```
 
 ## Notes
 
