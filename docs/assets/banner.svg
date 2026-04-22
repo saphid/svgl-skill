@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 480" role="img" aria-label="svgl-skill banner">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f472b6"/>
+      <stop offset="50%" stop-color="#db2777"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="480" fill="url(#bg)"/>
+  <rect width="1400" height="200" fill="url(#sheen)"/>
+  <circle cx="1220" cy="110" r="140" fill="#ffffff" opacity="0.06"/>
+  <circle cx="1340" cy="380" r="90"  fill="#ffffff" opacity="0.07"/>
+  <circle cx="70"   cy="420" r="120" fill="#ffffff" opacity="0.05"/>
+  <g transform="translate(1040,140)">
+    <rect x="0"  y="0"  width="100" height="100" rx="10" fill="#ffffff" opacity="0.20"/>
+    <rect x="30" y="30" width="100" height="100" rx="10" fill="#ffffff" opacity="0.40"/>
+    <rect x="60" y="60" width="100" height="100" rx="10" fill="#ffffff"/>
+    <text x="110" y="128" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="900" font-size="44" fill="#db2777">s</text>
+  </g>
+  <g font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#ffffff">
+    <text x="80" y="240" font-size="148" font-weight="900" letter-spacing="-0.035em">svgl-skill</text>
+    <text x="80" y="296" font-size="30" font-weight="300" opacity="0.92" letter-spacing="0.01em">every logo, one word away.</text>
+    <text x="80" y="420" font-size="13" font-weight="500" opacity="0.72" letter-spacing="0.42em">CLI  ·  AGENT SKILL  ·  SVGL.APP</text>
+  </g>
+</svg>
