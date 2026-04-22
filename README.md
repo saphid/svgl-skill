@@ -1,65 +1,82 @@
-<div align="center">
-  <a href="https://github.com/saphid/svgl-skill">
-    <img src="docs/assets/banner.svg" width="720" alt="svgl-skill" />
-  </a>
-</div>
+# svgl-skill
 
-<hr />
+A tiny skill for downloading brand SVGs from [svgl.app](https://svgl.app) by name.
 
-[![version](https://img.shields.io/badge/version-0.1.0-db2777?style=flat)](https://github.com/saphid/svgl-skill/releases)
-[![node](https://img.shields.io/badge/node-%E2%89%A5%2018-db2777?style=flat)](https://nodejs.org)
-[![runtime](https://img.shields.io/badge/runtime-pure%20node-db2777?style=flat)](https://github.com/saphid/svgl-skill)
-[![deps](https://img.shields.io/badge/dependencies-0-db2777?style=flat)](package.json)
-[![agent skill](https://img.shields.io/badge/agent%20skill-ready-db2777?style=flat)](SKILL.md)
-[![api](https://img.shields.io/badge/svgl.app-powered-db2777?style=flat)](https://svgl.app)
-[![license](https://img.shields.io/badge/license-MIT-db2777?style=flat)](LICENSE)
+<p align="center">
+  <img src="docs/assets/apple.png" alt="Apple logo" width="120" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/assets/vercel.png" alt="Vercel logo" width="120" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/assets/github-wordmark.png" alt="GitHub wordmark" width="300" />
+</p>
 
-**`svgl-skill`** is a small, opinionated CLI for pulling brand marks out of [svgl.app](https://svgl.app). Works as a human terminal tool and as an agent skill.
+## Invariant
 
-Small, but not only small.
+Given a brand name:
+1. find the exact SVGL item
+2. choose one route
+3. write one file
 
-```ts
-// in your terminal
-svgl show stripe
+Everything in this repo follows that shape.
 
-// in your agent harness
-const skill = require('svgl-skill')
-await skill.download('linear', { theme: 'dark', out: './brand' })
-```
+## Files
 
-## Quick Start
+- `svgl-simple.ts` — clean TypeScript version with `--light`, `--dark`, `--wordmark`, and `--out`
+- `svgl-simple.sh` — minimal bash version for exact-match SVG download
+- `SKILL.md` — skill instructions for agents
+
+## TypeScript usage
 
 ```bash
-git clone https://github.com/saphid/svgl-skill ~/svgl-skill
-~/svgl-skill/svgl.js show linear
+node svgl-simple.ts apple
+node svgl-simple.ts apple --dark
+node svgl-simple.ts github --wordmark
+node svgl-simple.ts github --wordmark --light --out ./github-wordmark.svg
 ```
 
-## Features
+### Flags
 
-- **Instant** — ranked matches from svgl.app in under 200 ms
-- **Inline preview** — `svgl show <brand>` renders directly into iTerm2 or Kitty
-- **Format-agnostic** — SVG, PNG, JPG, JPEG, GIF, all behind one flag
-- **Zero dependencies** — pure Node, no `sharp`, no `canvas`, no postinstall
-- **Harness-ready** — drop straight into pi, Claude Code, or Codex CLI
-- **Theme aware** — `--theme dark`, `--theme light`, `--theme auto`
+- `--light` — prefer light themed route
+- `--dark` — prefer dark themed route
+- `--wordmark` — use the wordmark instead of the icon
+- `--out <path>` — output file path
 
-## Documentation
+## Bash usage
 
-The manual lives at [`docs/`](docs/). Upstream API at [svgl.app/docs/api](https://svgl.app/docs/api).
+```bash
+./svgl-simple.sh apple
+./svgl-simple.sh apple ./apple.svg
+```
 
-## Communication
+This bash version does the minimum:
+- fetch catalog
+- exact-match title
+- choose one route
+- save one SVG
 
-- [GitHub issues](https://github.com/saphid/svgl-skill/issues) — bugs, feature requests
-- [svgl.app](https://svgl.app) — the catalog itself
+## Skill usage
 
-## Contributing
+The skill is for requests like:
+- show me the Apple logo
+- download the GitHub wordmark
+- get me the Linear icon as SVG
+- grab the Stripe logo
 
-PRs welcome. Open an issue first for anything larger than a typo.
+## Requirements
 
-## Contributors
+### TypeScript version
+- Node with `fetch` support and direct `.ts` execution
 
-Thanks to [everyone who has contributed](https://github.com/saphid/svgl-skill/graphs/contributors).
+### Bash version
+- `curl`
+- `jq`
+
+## Notes
+
+- SVGL provides SVG assets.
+- This repo intentionally stays small and dependency-light.
+- If you need PNG/JPG/GIF conversion, do that after download with the platform tool of your choice.
 
 ## License
 
-MIT. Brand marks belong to their respective owners; SVGL is the catalog, not the licensor.
+MIT
